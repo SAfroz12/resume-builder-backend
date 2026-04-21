@@ -12,8 +12,7 @@ app.use(cors({
 
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI(process.env.AIzaSyDOSbyjPZ-VFu9xqriR5d9bGJi9ZkLwjac);
-
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.get("/",(req,res)=>{
   res.send("backend working")
 })
