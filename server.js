@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
+import dotenv from "dotenv";
+dotenv.config();
 const app = express();
 app.use(cors({
   origin: "http://localhost:5173",
@@ -11,7 +12,7 @@ app.use(cors({
 
 app.use(express.json());
 
-const genAI = new GoogleGenerativeAI("AIzaSyDOSbyjPZ-VFu9xqriR5d9bGJi9ZkLwjac");
+const genAI = new GoogleGenerativeAI(process.env.AIzaSyDOSbyjPZ-VFu9xqriR5d9bGJi9ZkLwjac);
 
 app.get("/",(req,res)=>{
   res.send("backend working")
@@ -122,8 +123,10 @@ ${JSON.stringify(
   }
 });
 
-app.listen(8138, () => {
-  console.log("Server running on port 8138");
+const PORT = process.env.PORT || 8138;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 
