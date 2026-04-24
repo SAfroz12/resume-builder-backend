@@ -16,7 +16,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.get("/",(req,res)=>{
   res.send("backend working")
 })
-console.log("API KEY:", process.env.GEMINI_API_KEY);
+
 
 app.post("/analyze", async (req, res) => {
   console.log("REQUEST RECEIVED");
@@ -66,10 +66,18 @@ ${JSON.stringify(
   2
 )}
 `;
+const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash-latest"
+});
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+let result;
 
-    let result = await model.generateContent(prompt);
+try {
+  result = await model.generateContent(prompt);
+} catch (err) {
+  console.log("⚠️ First attempt failed, retrying...");
+  result = await model.generateContent(prompt);
+}
 
     if (!result || !result.response) {
       console.log("❌ Gemini returned empty response. Using fallback.");
@@ -111,17 +119,18 @@ ${JSON.stringify(
 
     res.json(parsed);
   } catch (err) {
-  console.error("❌ FULL ERROR:", err?.response?.data || err.message || err);
-    res.status(200).json({
-      message: "AI failed, returning fallback",
-      personalInfo: req.body.personalInfo,
-      education: req.body.education,
-      skills: req.body.skills,
-      projects: req.body.projects,
-      experience: req.body.experience,
-      certifications: req.body.certifications
-    });
-  }
+  console.error("❌ GEMINI ERROR FULL:", err);
+
+  res.status(200).json({
+    message: "AI failed, returning fallback",
+    personalInfo: req.body.personalInfo,
+    education: req.body.education,
+    skills: req.body.skills,
+    projects: req.body.projects,
+    experience: req.body.experience,
+    certifications: req.body.certifications
+  });
+}
 });
 
 const PORT = process.env.PORT || 8138;
