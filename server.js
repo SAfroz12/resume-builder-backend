@@ -19,7 +19,7 @@ app.get("/",(req,res)=>{
 
 
 app.post("/analyze", async (req, res) => {
-  console.log("REQUEST RECEIVED");
+   console.log("🔥 BACKEND HIT");
   console.log("DATA:", req.body);
 
   try {
@@ -75,7 +75,7 @@ let result;
 try {
   result = await model.generateContent(prompt);
 } catch (err) {
-  console.log("⚠️ First attempt failed, retrying...");
+  console.log("⚠️ retrying...");
   result = await model.generateContent(prompt);
 }
 
