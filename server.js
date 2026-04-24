@@ -16,6 +16,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.get("/",(req,res)=>{
   res.send("backend working")
 })
+console.log("API KEY:", process.env.GEMINI_API_KEY);
 
 app.post("/analyze", async (req, res) => {
   console.log("REQUEST RECEIVED");
@@ -91,6 +92,7 @@ ${JSON.stringify(
       .replace(/```/g, "")
       .trim();
 
+      console.log("CLEAN TEXT:", clean);
     let parsed;
 
     try {
@@ -109,7 +111,7 @@ ${JSON.stringify(
 
     res.json(parsed);
   } catch (err) {
-    console.error("SERVER ERROR:", err);
+  console.error("❌ FULL ERROR:", err?.response?.data || err.message || err);
     res.status(200).json({
       message: "AI failed, returning fallback",
       personalInfo: req.body.personalInfo,
