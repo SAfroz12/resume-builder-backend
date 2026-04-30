@@ -1,25 +1,46 @@
 import express from "express";
 import cors from "cors";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
-dotenv.config();
-const app = express();
-app.use(cors({
-  origin: "*",
-  methods: ["GET", "POST"],
-  allowedHeaders: ["Content-Type"]
-}));
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
+dotenv.config();
+
+const app = express();
+
+app.use(cors());
 app.use(express.json());
 
+//  INIT GEMINI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-app.get("/",(req,res)=>{
-  res.send("backend working")
-})
 
+//  ROOT
+app.get("/", (req, res) => {
+  res.send("backend working");
+});
 
+//  TEST AI (VERY IMPORTANT)
+app.get("/test-ai", async (req, res) => {
+  try {
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash"
+    });
+
+    const result = await model.generateContent("Say hello");
+
+    const text = result.response.text();
+
+    console.log("AI TEST:", text);
+
+    res.send(text);
+  } catch (err) {
+    console.error("❌ TEST ERROR:", err);
+    res.send("AI TEST FAILED");
+  }
+});
+
+//  ANALYZE ROUTE
 app.post("/analyze", async (req, res) => {
-   console.log("🔥 BACKEND HIT");
+  console.log("🔥 BACKEND HIT");
   console.log("DATA:", req.body);
 
   try {
@@ -33,10 +54,12 @@ app.post("/analyze", async (req, res) => {
     } = req.body;
 
     const prompt = `
-Return ONLY valid JSON. No backticks. No explanation.
+Return ONLY valid JSON.
+No markdown.
+No backticks.
+No explanation.
 
-Required JSON structure:
-
+FORMAT:
 {
   "personalInfo": {
     "fullName": "",
@@ -58,85 +81,62 @@ Required JSON structure:
   "certifications": []
 }
 
-Improve this resume but KEEP the same JSON format:
+Improve this resume:
 
 ${JSON.stringify(
-  { personalInfo, education, skills, projects, experience, certifications },
-  null,
-  2
-)}
+      { personalInfo, education, skills, projects, experience, certifications },
+      null,
+      2
+    )}
 `;
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash-latest"
-});
 
-let result;
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash"
+    });
 
-try {
-  result = await model.generateContent(prompt);
-} catch (err) {
-  console.log("⚠️ retrying...");
-  result = await model.generateContent(prompt);
-}
+     const result = await model.generateContent(prompt);
 
     if (!result || !result.response) {
-      console.log("❌ Gemini returned empty response. Using fallback.");
-      return res.json({
-        personalInfo,
-        education,
-        skills,
-        projects,
-        experience,
-        certifications
-      });
+      throw new Error("No response from Gemini");
     }
 
     let text = result.response.text();
-    console.log("RAW GEMINI OUTPUT:", text);
 
-  
+    console.log("🧠 RAW AI:", text);
+
     let clean = text
       .replace(/```json/g, "")
       .replace(/```/g, "")
       .trim();
 
-      console.log("CLEAN TEXT:", clean);
     let parsed;
 
     try {
       parsed = JSON.parse(clean);
     } catch (err) {
-      console.log("❌ JSON PARSE FAILED — using fallback");
-      parsed = {
-        personalInfo,
-        education,
-        skills,
-        projects,
-        experience,
-        certifications
-      };
+      console.log("❌ JSON PARSE FAILED");
+
+      return res.json({
+        message: "AI returned invalid JSON",
+        ...req.body
+      });
     }
 
     res.json(parsed);
-  } catch (err) {
-  console.error("❌ GEMINI ERROR FULL:", err);
 
-  res.status(200).json({
-    message: "AI failed, returning fallback",
-    personalInfo: req.body.personalInfo,
-    education: req.body.education,
-    skills: req.body.skills,
-    projects: req.body.projects,
-    experience: req.body.experience,
-    certifications: req.body.certifications
-  });
-}
+  } catch (err) {
+    console.error("❌ FINAL ERROR:", err);
+
+    res.json({
+      message: "AI failed, returning fallback",
+      ...req.body
+    });
+  }
 });
 
-const PORT = process.env.PORT || 8138;
+// START SERVER
+const PORT = 8138;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
-
-
